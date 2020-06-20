@@ -1,44 +1,62 @@
 #include <mbed.h>
 
+#include "pindef.h"
 
 #if defined(DEVICE_CAN) || defined(DOXYGEN_ONLY)
 
-Ticker ticker;
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
 /** The constructor takes in RX, and TX pin respectively.
   * These pins, for this example, are defined in mbed_app.json
   */
-CAN can1(PD_0, PD_1);
-CAN can2(PB_12, PB_13);
-char counter = 0;
+CAN can1(CAN1_RX, CAN1_TX);
+CAN can2(CAN2_RX, CAN2_TX);
 
-void send() {
-    printf("send()\n");
-    if(can1.write(CANMessage(1337, &counter, 1))) {
-        printf("wloop()\n");
-        counter++;
-        printf("Message sent: %d\n", counter);
-    } 
+bool receivedCAN = false;
+CANMessage receivedCANMessage;
+
+bool sendCANMessage(const char *data, const unsigned char len = 8)
+{
+    if (len > 8 || !can1.write(CANMessage(1337, data, len)))
+        return false;
+
     led1 = !led1;
+    return true;
 }
 
-int main() {
-    printf("main()\n");
-    ticker.attach(&send, 1); // in seconds (float)
-    CANMessage msg;
-    while(1) {
-        printf("loop()\n");
-        if(can2.read(msg)) {
-            printf("Message received: %d\n", msg.data[0]);
-            led2 = !led2;
-        } 
+void CAN_RxIrqHandler()
+{
+    if (can2.read(receivedCANMessage))
+    {
+        receivedCAN = true;
+        led2 = !led2;
+    }
+}
+
+int main()
+{
+    can2.attach(&CAN_RxIrqHandler, CAN::RxIrq);
+    char count = 0;
+
+    while (1)
+    {
+        if (sendCANMessage(&count, 1))
+        {
+            printf("Message sent: %d\n", count);
+            ++count;
+        }
+
+        if (receivedCAN)
+        {
+            printf("Message received: %d\n", receivedCANMessage.data[0]);
+            receivedCAN = false;
+        }
         //wait(0.2);
-        thread_sleep_for(200); // in ms
+        thread_sleep_for(1000); // in ms
     }
 }
 
 #else
-  #error CAN NOT SUPPORTED
-  
+#error CAN NOT SUPPORTED
+
 #endif
