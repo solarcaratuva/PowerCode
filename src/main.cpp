@@ -2,56 +2,66 @@
 
 #include "pindef.h"
 
-#if defined(DEVICE_CAN) || defined(DOXYGEN_ONLY)
+#if defined(DEVICE_CAN)
 
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
-/** The constructor takes in RX, and TX pin respectively.
-  * These pins, for this example, are defined in mbed_app.json
-  */
+
 CAN can1(CAN1_RX, CAN1_TX);
 CAN can2(CAN2_RX, CAN2_TX);
 
-bool receivedCAN = false;
-CANMessage receivedCANMessage;
+Ticker canTxTicker;
 
+char countId = 0;
+
+// WARNING: This method is NOT safe to call in an ISR context (if RTOS is enabled)
+// This method is Thread safe (CAN is Thread safe)
 bool sendCANMessage(const char *data, const unsigned char len = 8)
 {
     if (len > 8 || !can1.write(CANMessage(1337, data, len)))
         return false;
 
-    led1 = !led1;
     return true;
 }
 
-void CAN_RxIrqHandler()
+// WARNING: This method will be called in an ISR context
+void canTxIrqHandler()
 {
-    if (can2.read(receivedCANMessage))
+    if (sendCANMessage(&countId, 1))
     {
-        receivedCAN = true;
-        led2 = !led2;
+        led1 = !led1;
+        printf("Message sent: %d\n", countId); // This should be removed except for testing CAN
+        ++countId;
     }
+}
+
+// WARNING: This method will be called in an ISR context
+void canRxIrqHandler()
+{
+    CANMessage receivedCANMessage;
+    while (can2.read(receivedCANMessage))
+    {
+        led2 = !led2;
+        printf("Message received: %d\n", receivedCANMessage.data[0]); // This should be changed to copying the CAN data to a global variable, except for testing CAN
+    }
+}
+
+void canInit()
+{
+    canTxTicker.attach(&canTxIrqHandler, 1); // float, in seconds
+    can2.attach(&canRxIrqHandler, CAN::RxIrq);
 }
 
 int main()
 {
-    can2.attach(&CAN_RxIrqHandler, CAN::RxIrq);
-    char count = 0;
+    canInit();
 
+    char mainLoopCount = 0;
     while (1)
     {
-        if (sendCANMessage(&count, 1))
-        {
-            printf("Message sent: %d\n", count);
-            ++count;
-        }
+        printf("main() loop #%d\n", mainLoopCount);
+        ++mainLoopCount;
 
-        if (receivedCAN)
-        {
-            printf("Message received: %d\n", receivedCANMessage.data[0]);
-            receivedCAN = false;
-        }
-        //wait(0.2);
         thread_sleep_for(1000); // in ms
     }
 }
