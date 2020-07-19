@@ -1,23 +1,14 @@
-# PowerSystem
-Developing PCB for Power System and ECU code for STM32F413ZH.
+# PowerCode
+
+Developing embedded code for the Power Team PCB. The MCU we are using is STM32F413ZH.
 
 ## PCB Design
-TODO:
-1) ~Remove double throw 12V power relay off PCB (as it is chasis mount)~
-2) ~Add charge and discharge relays to PCB~
-3) ~Figure out which pins on the STM to use for what~
-4) ~Add extra CAN port (need one for Rx from BMS, and one for Tx and Rx to other PCBs) as well as the external CAN Tranceivers~
-5) ~Make sure everything has footprint and 3d model~
-6) Pick out exact voltage regulator models
-7) Layout board
 
-## STM 32 & ECU Code
-TODO:
-1) Figure out which pins on the STM to use for what
-2) Figure out what each power supply input (VDD, VSS, VBAT, VDDUSB, VDDA, VSSA) and other important inputs are for 
+All information about the current PCB Design can be found [here](https://github.com/solarcaratuva/PowerSystem).
 
-Pin Names used by MbedOS:
-https://os.mbed.com/platforms/ST-Nucleo-F413ZH/
+## STM32 Code
+
+A list of pin names used by MbedOS for our MCU can be found [here](https://os.mbed.com/platforms/ST-Nucleo-F413ZH/).
 
 Important pins for us:
 
@@ -54,4 +45,8 @@ Important pins for us:
 | PC4 | `PC_4`/`A4` | Unused Analog I/O |
 | PC5 | `PC_5`/`A5` | Unused Analog I/O |
 
-Note: the LEDs for Power ON, AUX ON, DC-DC ON, and AUX/DC-DC being used can be directly connected to the power supply / relay driving it.
+**Note:** the LEDs for Power ON, AUX ON, DC-DC ON, and AUX/DC-DC being used can be directly connected to the power supply / relay driving it.
+
+## Documentation
+
+[BMS CAN](docs/bms-can.md): Structure and format of CAN communication from the Orion BMS.
